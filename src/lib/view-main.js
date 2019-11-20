@@ -3,8 +3,9 @@ import React from "react";
 export default class ViewMain extends React.Component {
   constructor(){
     super();
-    this.boxesQty = 10;
+    this.boxesQty = 6;
     this.boxSize = 0.2;
+    this.margin = 0.1;
   }
 
   getBoxes() {
@@ -16,12 +17,10 @@ export default class ViewMain extends React.Component {
     for(let j=startPoint; j<this.boxesQty; j++) {
       for(let i=startPoint; i<this.boxesQty; i++) {
 
-        const x = i*this.boxSize;
-        const z = j*this.boxSize;
+        const x = (i*this.boxSize) + (i*this.margin);
+        const z = (j*this.boxSize) + (j*this.margin);
 
         const delay = (new THREE.Vector3(0,0,0)).distanceTo(new THREE.Vector3(x,0,z) );
-
-        console.log(">>>>", delay);
 
         const box = <a-box
                       key={i+','+j}
@@ -30,8 +29,9 @@ export default class ViewMain extends React.Component {
                       height={this.boxSize}
                       width={this.boxSize}
                       color="#4CC3D9"
-                      shadow="cast: true; receive: true"
-                      oscilator={"targetHeight: 3; delay: "+ delay*100 +";"}
+                      // shadow="cast: true; receive: true"
+                      color-changer={"colorSeed: "+ i*j +";"}
+                      oscillator={"targetHeight: 3; delay: "+ delay*100 +";"}
                     ></a-box>;
 
         boxes.push(box);

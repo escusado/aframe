@@ -1,4 +1,4 @@
-AFRAME.registerComponent('oscilator', {
+AFRAME.registerComponent('oscillator', {
   schema: {
     targetHeight: {type: 'number'},
     delay: {type: 'number'}
