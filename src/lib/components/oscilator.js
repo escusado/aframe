@@ -18,7 +18,6 @@ AFRAME.registerComponent('oscilator', {
     }
 
     const currentPosition = this.el.object3D.position;
-    
 
     // Amplitude (Tallness) of the wave.
     A = 1.5;
@@ -33,15 +32,7 @@ AFRAME.registerComponent('oscilator', {
 
     const heightDelta = A * ( Math.sin ( B * ( this.delta - C ) ) ) + D;
 
-    // console.log('>>>>>', heightDelta );
     this.el.setAttribute('height', heightDelta + A);
-
-    // this.el.setAttribute('position', {
-    //   x: currentPosition.x,
-    //   y: currentPosition.y + (heightDelta/2),
-    //   z: currentPosition.z
-    // });
-
    }
 
 });
