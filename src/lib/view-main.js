@@ -34,8 +34,6 @@ export default class ViewMain extends React.Component {
                       oscilator={"targetHeight: 3; delay: "+ delay*100 +";"}
                     ></a-box>;
 
-
-
         boxes.push(box);
       }
     }
