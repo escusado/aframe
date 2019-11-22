@@ -37,7 +37,7 @@ export default class ViewMain extends React.Component {
         boxes.push(box);
       }
     }
-    console.log(boxes);
+    // console.log(boxes);
     return boxes;
   }
 
