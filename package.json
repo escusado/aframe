@@ -11,6 +11,7 @@
     "@babel/preset-env": "^7.6.3",
     "@babel/preset-react": "^7.6.3",
     "aframe": "^0.9.2",
+    "aframe-simple-sun-sky": "^1.2.2",
     "babel-loader": "^8.0.6",
     "chroma-js": "^2.1.0",
     "elementtree": "^0.1.7",

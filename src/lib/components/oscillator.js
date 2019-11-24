@@ -10,6 +10,7 @@ AFRAME.registerComponent('oscillator', {
     setTimeout(()=>{
       this.lock = false;
     }, this.data.delay*10);
+    this.heightFix = Math.random();
   },
 
   tick: function (time, timeDelta) {
@@ -22,7 +23,7 @@ AFRAME.registerComponent('oscillator', {
     // Amplitude (Tallness) of the wave.
     A = 1.5;
     // How many waves there are for each cycle.
-    B = 1
+    B = 3;
     // How far to shift the wave’s X position.
     C = 0.5;
     // How far to shift the wave’s Y position.
@@ -32,7 +33,8 @@ AFRAME.registerComponent('oscillator', {
 
     const heightDelta = A * ( Math.sin ( B * ( this.delta - C ) ) ) + D;
 
-    this.el.setAttribute('height', heightDelta + A);
+    this.el.setAttribute('height', (heightDelta + A));
+    // this.el.setAttribute('rotation', (heightDelta*10*this.heightFix)+ ' '+(heightDelta*45*this.heightFix)+' '+(this.heightFix*heightDelta*10));
    }
 
 });
