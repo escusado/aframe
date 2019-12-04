@@ -16,6 +16,14 @@ export default class TerrainDemo {
 
                   ${this.getElements()}
 
+
+
+                  <a-assets>
+                    <a-asset-item id="tank" src="src/obj/micro_tank_out/micro_tank.gltf"></a-asset-item>
+                  </a-assets>
+
+                  <a-entity gltf-model="#tank"></a-entity>
+
                 </a-scene>`;
   }
 
