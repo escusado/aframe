@@ -81,7 +81,7 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 9);
+/******/ 	return __webpack_require__(__webpack_require__.s = 11);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -112,6 +112,166 @@ module.exports = g;
 
 /***/ }),
 /* 1 */
+/***/ (function(module, exports) {
+
+// simple-sun-sky.js - An A-Frame sky primitive using a simple (and fast) gradient away from the sun.
+// Copyright © 2018-2019 P. Douglas Reeder under the MIT License
+
+AFRAME.registerShader('simpleSunSky', {
+    schema: {
+        sunPosition: {type: 'vec3', default: {x:1.0, y:1.0, z:1.0}},
+        lightColor: {type: 'color', default: '#87cefa'},   // light sky blue
+        darkColor: {type: 'color', default: '#126aab'},   // dark sky blue
+        fogColor: {type: 'color', default: '#4c9cd2'},   // light+dark+gray
+        sunColor: {type: 'color', default: '#fff7ee'},   // yellow-white
+        log: {type: 'boolean', default: false}
+    },
+
+    vertexShader: `
+precision mediump float;
+
+varying vec3 vnorm;
+
+void main() {
+    vnorm = normal;
+       
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}`,
+
+    fragmentShader: `
+precision mediump float;
+
+const float PI = 3.1415926535897932384626433832795;
+
+uniform vec3 sunNormal;
+uniform vec3 lightColor;
+uniform vec3 darkColor;
+uniform vec3 sunColor;
+
+varying vec3 vnorm;
+
+
+void main() {
+    vec3 norm = normalize(vnorm);
+    // ranges from 0 when normal & sunNormal are aligned to 1 when opposite
+    float interp = acos(dot(norm, sunNormal)) / PI;
+
+    vec3 color = mix(lightColor, darkColor, interp);
+    color = mix(sunColor, color, min((interp-0.015)*75.0, 1.0));
+    gl_FragColor = vec4(color, 1.0);
+}`,
+
+    fragmentShaderWithFog: `
+precision mediump float;
+
+const float PI = 3.1415926535897932384626433832795;
+
+uniform vec3 sunNormal;
+uniform vec3 lightColor;
+uniform vec3 darkColor;
+uniform vec3 fogColor;
+uniform vec3 sunColor;
+
+varying vec3 vnorm;
+
+
+void main() {
+    vec3 norm = normalize(vnorm);
+    // ranges from 0 when normal & sunNormal are aligned to 1 when opposite
+    float interp = acos(dot(norm, sunNormal)) / PI;
+
+    vec3 color = mix(lightColor, darkColor, interp);
+    
+    color = mix(sunColor, color, smoothstep(0.009, 0.012, interp));
+
+    color = mix(fogColor, color, smoothstep(0.0, 0.3, norm.y));
+
+    gl_FragColor = vec4(color, 1.0);
+}`,
+
+    /**
+     * `init` used to initialize material. Called once.
+     */
+    init: function (data) {
+        let sunPos = new THREE.Vector3(data.sunPosition.x, data.sunPosition.y, data.sunPosition.z);
+        if (data.fogColor.toUpperCase() === 'NONE') {
+            if (data.log) {
+                console.log("sunPos:", sunPos, "   lightColor:", new THREE.Color(data.lightColor), "   darkColor:", new THREE.Color(data.darkColor));
+            }
+            this.material = new THREE.ShaderMaterial({
+                uniforms: {
+                    lightColor: {value: new THREE.Color(data.lightColor)},
+                    darkColor: {value: new THREE.Color(data.darkColor)},
+                    sunNormal: {value: sunPos.normalize()},
+                    sunColor: {value: new THREE.Color(data.sunColor)}
+                },
+                vertexShader: this.vertexShader,
+                fragmentShader: this.fragmentShader
+            });
+        } else {
+            if (data.log) {
+                console.log("sunPos:", sunPos, "   lightColor:", new THREE.Color(data.lightColor), "   darkColor:", new THREE.Color(data.darkColor),
+                    "   fogColor:", new THREE.Color(data.fogColor));
+            }
+            this.material = new THREE.ShaderMaterial({
+                uniforms: {
+                    lightColor: {value: new THREE.Color(data.lightColor)},
+                    darkColor: {value: new THREE.Color(data.darkColor)},
+                    sunNormal: {value: sunPos.normalize()},
+                    sunColor: {value: new THREE.Color(data.sunColor)},
+                    fogColor: {value: new THREE.Color(data.fogColor)}
+                },
+                vertexShader: this.vertexShader,
+                fragmentShader: this.fragmentShaderWithFog
+            });
+        }
+    },
+    /**
+     * `update` used to update the material. Called on initialization and when data updates.
+     */
+    update: function (data) {
+        let sunPos = new THREE.Vector3(data.sunPosition.x, data.sunPosition.y, data.sunPosition.z);
+        this.material.uniforms.sunNormal.value = sunPos.normalize();
+        // this.material.uniforms.sunNormal.value.set(sunPos.normalize());
+
+        this.material.uniforms.lightColor.value.set(data.lightColor);
+        this.material.uniforms.darkColor.value.set(data.darkColor);
+        this.material.uniforms.sunColor.value.set(data.sunColor);
+        if (this.material.uniforms.fogColor) {
+            this.material.uniforms.fogColor.value.set(data.fogColor);
+        }
+    },
+});
+
+
+AFRAME.registerPrimitive('a-simple-sun-sky', {
+    defaultComponents: {
+        geometry: {
+            primitive: 'sphere',
+            radius: 5000,
+            segmentsWidth: 64,
+            segmentsHeight: 20
+        },
+        material: {
+            shader: 'simpleSunSky',
+            side: 'back'
+        }
+    },
+
+    mappings: {
+        'sun-position': 'material.sunPosition',
+        'light-color': 'material.lightColor',
+        'dark-color': 'material.darkColor',
+        'sun-color': 'material.sunColor',
+        'fog-color': 'material.fogColor',
+        'log': 'material.log',
+        'radius': 'geometry.radius'
+    }
+});
+
+
+/***/ }),
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, setImmediate) {var require;var require;(function(f){if(true){module.exports=f()}else { var g; }})(function(){var define,module,exports;return (function(){function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return require(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s}return e})()({1:[function(_dereq_,module,exports){
@@ -81412,10 +81572,10 @@ module.exports = getWakeLock();
 });
 //# sourceMappingURL=aframe-master.js.map
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(0), __webpack_require__(2).setImmediate))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(0), __webpack_require__(3).setImmediate))
 
 /***/ }),
-/* 2 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global) {var scope = (typeof global !== "undefined" && global) ||
@@ -81471,7 +81631,7 @@ exports._unrefActive = exports.active = function(item) {
 };
 
 // setimmediate attaches itself to the global object
-__webpack_require__(3);
+__webpack_require__(4);
 // On some exotic environments, it's not clear which object `setimmediate` was
 // able to install onto.  Search each possibility in the same order as the
 // `setimmediate` library.
@@ -81485,7 +81645,7 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(0)))
 
 /***/ }),
-/* 3 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(global, process) {(function (global, undefined) {
@@ -81675,10 +81835,10 @@ exports.clearImmediate = (typeof self !== "undefined" && self.clearImmediate) ||
     attachTo.clearImmediate = clearImmediate;
 }(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
 
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(0), __webpack_require__(4)))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(0), __webpack_require__(5)))
 
 /***/ }),
-/* 4 */
+/* 5 */
 /***/ (function(module, exports) {
 
 // shim for using process in browser
@@ -81868,12 +82028,13 @@ process.umask = function() { return 0; };
 
 
 /***/ }),
-/* 5 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
-	"./color-changer.js": 6,
-	"./oscillator.js": 8
+	"./color-changer.js": 7,
+	"./oscillator.js": 9,
+	"./rotator.js": 10
 };
 
 
@@ -81894,13 +82055,13 @@ webpackContext.keys = function webpackContextKeys() {
 };
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
-webpackContext.id = 5;
+webpackContext.id = 6;
 
 /***/ }),
-/* 6 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var Chroma = __webpack_require__(7);
+var Chroma = __webpack_require__(8);
 
 AFRAME.registerComponent('color-changer', {
   schema: {
@@ -81909,22 +82070,22 @@ AFRAME.registerComponent('color-changer', {
     }
   },
   init: function init() {
-    this.delta = 0; // this.colorScale = Chroma.scale(['#FF0014','#FF6813', '#FBF992', '#5CCA40', '#0091D2', '#A800E6', '#FF0014']).mode('lch').colors(256)
-    // this.colorScale = Chroma.scale(["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#ff0000"]).mode('lch').colors(256);
-
-    this.colorScale = Chroma.scale(["#36b5b0", "#9dd8c8", "#f09595", "#fcf5b0"]).mode('lch').colors(350); // console.log('>>>>', this.data.colorSeed*10);
+    this.delta = 0;
+    this.colorScale = Chroma.scale(['#FF0014', '#FF6813', '#FBF992', '#5CCA40', '#0091D2', '#A800E6']).mode('lch').colors(350); // this.colorScale = Chroma.scale(["#ff0000", "#ffa500", "#ffff00", "#00ff00", "#0000ff", "#ff0000"]).mode('lch').colors(256);
+    // this.colorScale = Chroma.scale(["#36b5b0", "#9dd8c8", "#f09595", "#fcf5b0"]).mode('lch').colors(350);
+    // console.log('>>>>', this.data.colorSeed*10);
 
     this.el.setAttribute('color', this.colorScale[Math.abs(Math.ceil(this.data.colorSeed * 5))]);
   },
   tick: function tick(time, timeDelta) {
     var currentHeight = this.el.components.geometry.data.height; // console.log(currentHeight);
-    // this.el.setAttribute('color', this.colorScale[Math.abs(Math.ceil(currentHeight*100))]);
-    // this.el.setAttribute('height', heightDelta + A);
+
+    this.el.setAttribute('color', this.colorScale[Math.abs(Math.ceil(currentHeight * 100))]); // this.el.setAttribute('height', heightDelta + A);
   }
 });
 
 /***/ }),
-/* 7 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /**
@@ -85154,7 +85315,7 @@ AFRAME.registerComponent('color-changer', {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports) {
 
 AFRAME.registerComponent('oscillator', {
@@ -85174,6 +85335,7 @@ AFRAME.registerComponent('oscillator', {
     setTimeout(function () {
       _this.lock = false;
     }, this.data.delay * 10);
+    this.heightFix = Math.random();
   },
   tick: function tick(time, timeDelta) {
     if (this.lock) {
@@ -85184,48 +85346,69 @@ AFRAME.registerComponent('oscillator', {
 
     A = 1.5; // How many waves there are for each cycle.
 
-    B = 1; // How far to shift the wave’s X position.
+    B = 3; // How far to shift the wave’s X position.
 
     C = 0.5; // How far to shift the wave’s Y position.
 
     D = 0.5;
     this.delta += timeDelta / 1000;
     var heightDelta = A * Math.sin(B * (this.delta - C)) + D;
-    this.el.setAttribute('height', heightDelta + A);
+    this.el.setAttribute('height', heightDelta + A); // this.el.setAttribute('rotation', (heightDelta*10*this.heightFix)+ ' '+(heightDelta*45*this.heightFix)+' '+(this.heightFix*heightDelta*10));
   }
 });
 
 /***/ }),
-/* 9 */
+/* 10 */
+/***/ (function(module, exports) {
+
+AFRAME.registerComponent('rotator', {}); // schema: {
+//   speed: {type: 'number'}
+// },
+//
+// init: function () {
+//   this.delta = 0;
+// },
+//
+// tick: function (time, timeDelta) {
+//   const currentRotation = this.el.object3D.rotation;
+//
+//   this.delta += (timeDelta/10) * this.data.speed;
+//
+//   this.el.setAttribute('rotation', `0 ${this.delta} 0`);
+//   console.log(this.delta);
+//
+// }
+
+/***/ }),
+/* 11 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
+// ESM COMPAT FLAG
 __webpack_require__.r(__webpack_exports__);
 
 // EXTERNAL MODULE: ./node_modules/aframe/dist/aframe-master.js
-var aframe_master = __webpack_require__(1);
+var aframe_master = __webpack_require__(2);
 
-// CONCATENATED MODULE: ./src/lib/view-main-vanilla.js
+// CONCATENATED MODULE: ./src/lib/rainbow-wave.js
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-var ViewMain =
-/*#__PURE__*/
-function () {
-  function ViewMain() {
-    _classCallCheck(this, ViewMain);
+var RainbowWave = /*#__PURE__*/function () {
+  function RainbowWave() {
+    _classCallCheck(this, RainbowWave);
 
-    this.boxesQty = 15;
-    this.boxSize = 0.1;
-    this.margin = 0.1;
-    var template = "<a-scene>\n\n                        <a-entity position=\"0 2 4\" rotation=\"-45 0 0\">\n                          <a-camera></a-camera>\n                        </a-entity>\n\n                        <a-entity light=\"type: ambient; intensity: 0.5;\"></a-entity>\n                        <a-entity light=\"type: directional; castShadow: true; intensity: 1;\" position=\"-5 3 1.5\"></a-entity>\n\n                        <a-sky color=\"#7BC8A4\"></a-sky>\n                        <a-plane position=\"0 0 0\" rotation=\"-90 0 0\" width=\"500\" height=\"500\" color=\"#7BC8A4\" shadow=\"cast: true; receive: true\"></a-plane>\n\n                        ".concat(this.getBoxes(), "\n\n                      </a-scene>");
+    this.boxesQty = 5;
+    this.boxSize = 0.3;
+    this.margin = 0;
+    var template = "<a-scene>\n\n                        <a-entity position=\"0 2 4\" rotation=\"-45 0 0\">\n                          <a-camera></a-camera>\n                        </a-entity>\n\n                        <a-entity light=\"type: ambient; intensity: 0.5;\"></a-entity>\n                        <a-entity light=\"type: directional; castShadow: true; intensity: 1;\" position=\"-5 3 1.5\"></a-entity>\n\n                        <a-sky color=\"#555\"></a-sky>\n                        <a-plane position=\"0 0 0\" rotation=\"-90 0 0\" width=\"500\" height=\"500\" color=\"#555\" shadow=\"cast: true; receive: true\"></a-plane>\n\n                        ".concat(this.getBoxes(), "\n\n                      </a-scene>");
     this.el = new DOMParser().parseFromString(template, 'text/html').body.firstChild;
   }
 
-  _createClass(ViewMain, [{
+  _createClass(RainbowWave, [{
     key: "getBoxes",
     value: function getBoxes() {
       var startPoint = this.boxesQty * -1;
@@ -85235,39 +85418,50 @@ function () {
         for (var i = startPoint; i < this.boxesQty; i++) {
           var x = i * this.boxSize + i * this.margin;
           var z = j * this.boxSize + j * this.margin;
-          var delay = new THREE.Vector3(0, 0, 0).distanceTo(new THREE.Vector3(x, 0, z)); // const box = <a-box
-          //               key={i+','+j}
-          //               position={`${x} 0 ${z}`}
-          //               depth={this.boxSize}
-          //               height={this.boxSize}
-          //               width={this.boxSize}
-          //               color="#4CC3D9"
-          //               // shadow="cast: true; receive: true"
-          //               color-changer={"colorSeed: "+ i*j +";"}
-          //               oscillator={"targetHeight: 3; delay: "+ delay*100 +";"}
-          //             ></a-box>;
-
-          var box = "\n                    <a-box\n                      key=\"".concat(i + ',' + j, "\"\n                      position=\"").concat(x + ' 0 ' + z, "\"\n                      depth=\"").concat(this.boxSize, "\"\n                      height=\"").concat(this.boxSize, "\"\n                      width=\"").concat(this.boxSize, "\"\n                      color=\"#4CC3D9\"\n                      color-changer=\"").concat("colorSeed: " + i * j + ";", "\"\n                      oscillator=\"").concat("targetHeight: 3; delay: " + delay * 100 + ";", "\"\n                    ></a-box>\n                    "); // console.log('>>>>', box);
-
+          var delay = new THREE.Vector3(0, 0, 0).distanceTo(new THREE.Vector3(x, 0, z));
+          var box = "\n                    <a-box\n                      key=\"".concat(i + ',' + j, "\"\n                      position=\"").concat(x + ' 0 ' + z, "\"\n                      depth=\"").concat(this.boxSize, "\"\n                      height=\"").concat(this.boxSize, "\"\n                      width=\"").concat(this.boxSize, "\"\n                      color=\"#4CC3D9\"\n                      shadow=\"cast: true;\"\n                      color-changer=\"").concat("colorSeed: " + i * j + ";", "\"\n                      oscillator=\"").concat("targetHeight: 3; delay: " + delay * 100 + ";", "\"\n                    ></a-box>\n                    ");
           boxes.push(box);
         }
-      } // console.log(boxes);
-
+      }
 
       return boxes;
-    } // render(el) {
-    //   console.log('>>>>');
-    //   for (const box in this.getBoxes()) {
-    //     this.el.appendChild(box);
-    //   }
-    //   console.log(this.el);
-    //   el.appendChild(this.el);
-    // }
-
+    }
   }]);
 
-  return ViewMain;
+  return RainbowWave;
 }();
+
+
+;
+// CONCATENATED MODULE: ./src/lib/terrain-demo.js
+function terrain_demo_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+__webpack_require__(1);
+
+var TerrainDemo = function TerrainDemo() {
+  terrain_demo_classCallCheck(this, TerrainDemo);
+
+  this.el = "<a-scene>\n\n                  <a-entity position=\"2 1 4\" rotation=\"-10 30 0\">\n                    <a-camera></a-camera>\n                  </a-entity>\n\n                  <a-entity light=\"type: directional; color: #FFF; intensity: 1\" position=\"4 7 -1\" shadow=\"cast: true\"></a-entity>\n                  <a-entity light=\"type: ambient; color: #BBB\" shadow=\"cast: true; receive: true\"></a-entity>\n\n                  <a-box material=\"roughness: 1; color: red\" shadow=\"cast: true; receive: true\"></a-box>\n\n                  <a-plane position=\"0 0 0\" rotation=\"-90 0 0\" width=\"500\" height=\"500\" material=\"roughness: 1; color: #FFF\" shadow=\"receive: true\"></a-plane>\n                </a-scene>";
+};
+
+
+; // <a-simple-sun-sky sun-position="0.7 0.4 -1"></a-simple-sun-sky>
+/////
+//
+// <a-assets>
+// <a-asset-item id="tank" src="src/obj/micro_tank_out/micro_tank.gltf"></a-asset-item>
+// </a-assets>
+// <a-entity gltf-model="#tank"></a-entity>
+// CONCATENATED MODULE: ./src/lib/basic-demo.js
+function basic_demo_classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+__webpack_require__(1);
+
+var basic_demo_TerrainDemo = function TerrainDemo() {
+  basic_demo_classCallCheck(this, TerrainDemo);
+
+  this.el = "<a-scene>\n\n                  <a-entity position=\"2 1 4\" rotation=\"-10 30 0\">\n                    <a-camera></a-camera>\n                  </a-entity>\n\n                  <a-box material=\"color: red\"></a-box>\n\n                </a-scene>";
+};
 
 
 ;
@@ -85278,25 +85472,18 @@ function src_defineProperties(target, props) { for (var i = 0; i < props.length;
 
 function src_createClass(Constructor, protoProps, staticProps) { if (protoProps) src_defineProperties(Constructor.prototype, protoProps); if (staticProps) src_defineProperties(Constructor, staticProps); return Constructor; }
 
-// import React from "react";
-// import ReactDOM from "react-dom";
-// import ViewMain from "./lib/view-main";
- //
+ // Bring all components no matter what! ⚙️⚙️⚙️
 
-var req = __webpack_require__(5);
+var req = __webpack_require__(6);
 
 req.keys().forEach(function (key) {
   req(key);
-}); //
-// // window.Socket = io();
-//
-// ReactDOM.render(<ViewMain name="wat"/>, document.querySelector("#root"));
+});
 
 
 
-var App =
-/*#__PURE__*/
-function () {
+
+var App = /*#__PURE__*/function () {
   function App() {
     src_classCallCheck(this, App);
 
@@ -85314,12 +85501,14 @@ function () {
 }();
 
 var app = new App();
-var viewMain = new ViewMain();
-app.render(document.querySelector("#root")); // viewMain.render(app.el);
+app.render(document.querySelector("#root"));
+var tmpEl = document.createElement("div"); // const rainbowWave = new RainbowWave();
+// tmpEl.appendChild(rainbowWave.el);
+// const terrainDemo = new TerrainDemo();
+// app.el.innerHTML = terrainDemo.el;
 
-var tmpEl = document.createElement("div");
-tmpEl.appendChild(viewMain.el);
-app.el.innerHTML = tmpEl.innerHTML;
+var basicDemo = new basic_demo_TerrainDemo();
+app.el.innerHTML = basicDemo.el;
 
 /***/ })
 /******/ ]);

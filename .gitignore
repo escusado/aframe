@@ -16,3 +16,6 @@
 .eslintcache
 package-lock.json
 src/obj
+
+# Local Netlify folder
+.netlify
